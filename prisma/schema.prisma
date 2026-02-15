@@ -1,0 +1,28 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+  previewFeatures = ["postgresqlExtensions"]
+}
+
+datasource db {
+  provider = "postgresql"
+  extensions = [uuid_ossp(map: "uuid-ossp")]
+}
+
+model example {
+  id        String   @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  name      String
+  status    Boolean  @default(true)
+  created_by String   @default("system") @db.VarChar(50)
+  created_at DateTime @default(now())
+  updated_by String?   @default("system") @db.VarChar(50)
+  updated_at DateTime? @updatedAt
+  deleted_by String?   @default("system") @db.VarChar(50)
+  deleted_at DateTime?
+}
