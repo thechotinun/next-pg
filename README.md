@@ -5,14 +5,23 @@ This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-
 First, run the development server:
 
 ```bash
+# Install dependencies
+npm install
+# Set .env file
+DATABASE_URL="postgresql://USER:PASSWORD@localhost:5432/DB_NAME"
+# Create database
+npx prisma migrate dev
+# Generate Prisma Client
+npx prisma generate
+# Start development server
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
+
+```bash
+# Open Prisma Studio
+npx prisma studio
+```
+
 Development
 ```bash
 # 1. Update prisma/schema.prisma
