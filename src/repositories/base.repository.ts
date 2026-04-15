@@ -8,150 +8,169 @@ export interface BaseEntity {
   deleted_at?: Date | null
 }
 
+type ModelDelegate = {
+  findMany: (args?: object) => Promise<object[]>
+  findUnique: (args: object) => Promise<object | null>
+  findFirst: (args?: object) => Promise<object | null>
+  create: (args: object) => Promise<object>
+  createMany: (args: object) => Promise<{ count: number }>
+  update: (args: object) => Promise<object>
+  updateMany: (args: object) => Promise<{ count: number }>
+  delete: (args: object) => Promise<object>
+  deleteMany: (args: object) => Promise<{ count: number }>
+  count: (args?: object) => Promise<number>
+  upsert: (args: object) => Promise<object>
+}
+
+type PrismaTransactionClient = Omit<
+  PrismaClient,
+  '$connect' | '$disconnect' | '$on' | '$transaction' | '$extends'
+>
+
+type WhereInput = Record<string, unknown>
+type OrderByInput = Record<string, unknown> | Record<string, unknown>[]
+
+export interface FindOptions {
+  where?: WhereInput
+  orderBy?: OrderByInput
+  include?: Record<string, unknown>
+  skip?: number
+  take?: number
+}
+
 export class BaseRepository<T extends BaseEntity> {
-  protected model: any
+  protected model: ModelDelegate
   protected prisma: PrismaClient
 
   constructor(modelName: string) {
     this.prisma = prisma
-    this.model = (prisma as any)[modelName]
+    this.model = (prisma as unknown as Record<string, ModelDelegate>)[modelName]
   }
 
-  async findAll(options?: {
-    where?: any
-    orderBy?: any
-    include?: any
-    skip?: number
-    take?: number
-  }): Promise<T[]> {
+  async findAll(options?: FindOptions): Promise<T[]> {
     return this.model.findMany({
       where: {
         deleted_at: null,
-        ...options?.where
+        ...options?.where,
       },
-      orderBy: options?.orderBy || { created_at: 'desc' },
+      orderBy: options?.orderBy ?? { created_at: 'desc' },
       include: options?.include,
       skip: options?.skip,
-      take: options?.take
-    })
+      take: options?.take,
+    }) as Promise<T[]>
   }
 
-  async findById(id: string, include?: any): Promise<T | null> {
+  async findById(id: string, include?: Record<string, unknown>): Promise<T | null> {
     return this.model.findUnique({
       where: { id },
-      include
-    })
+      include,
+    }) as Promise<T | null>
   }
 
-  async findOne(where: any, include?: any): Promise<T | null> {
+  async findOne(where: WhereInput, include?: Record<string, unknown>): Promise<T | null> {
     return this.model.findFirst({
       where: {
         deleted_at: null,
-        ...where
+        ...where,
       },
-      include
-    })
+      include,
+    }) as Promise<T | null>
   }
 
-  async findMany(where: any, options?: {
-    orderBy?: any
-    include?: any
-    skip?: number
-    take?: number
-  }): Promise<T[]> {
+  async findMany(where: WhereInput, options?: Omit<FindOptions, 'where'>): Promise<T[]> {
     return this.model.findMany({
       where: {
         deleted_at: null,
-        ...where
+        ...where,
       },
-      orderBy: options?.orderBy || { createdAt: 'desc' },
+      orderBy: options?.orderBy ?? { created_at: 'desc' },
       include: options?.include,
       skip: options?.skip,
-      take: options?.take
-    })
+      take: options?.take,
+    }) as Promise<T[]>
   }
 
-  async create(data: any): Promise<T> {
-    return this.model.create({ data })
+  async create(data: Partial<T>): Promise<T> {
+    return this.model.create({ data }) as Promise<T>
   }
 
-  async createMany(data: any[]): Promise<{ count: number }> {
+  async createMany(data: Partial<T>[]): Promise<{ count: number }> {
     return this.model.createMany({ data })
   }
 
-  async update(id: string, data: any): Promise<T> {
+  async update(id: string, data: Partial<T>): Promise<T> {
     return this.model.update({
       where: { id },
-      data
-    })
+      data,
+    }) as Promise<T>
   }
 
-  async updateMany(where: any, data: any): Promise<{ count: number }> {
+  async updateMany(where: WhereInput, data: Partial<T>): Promise<{ count: number }> {
     return this.model.updateMany({
       where: {
         deleted_at: null,
-        ...where
+        ...where,
       },
-      data
+      data,
     })
   }
 
   async softDelete(id: string): Promise<T> {
     return this.model.update({
       where: { id },
-      data: { deleted_at: new Date() }
-    })
+      data: { deleted_at: new Date() },
+    }) as Promise<T>
   }
 
-  async softDeleteMany(where: any): Promise<{ count: number }> {
+  async softDeleteMany(where: WhereInput): Promise<{ count: number }> {
     return this.model.updateMany({
       where: {
         deleted_at: null,
-        ...where
+        ...where,
       },
-      data: { deleted_at: new Date() }
+      data: { deleted_at: new Date() },
     })
   }
 
   async hardDelete(id: string): Promise<T> {
     return this.model.delete({
-      where: { id }
-    })
+      where: { id },
+    }) as Promise<T>
   }
 
-  async hardDeleteMany(where: any): Promise<{ count: number }> {
+  async hardDeleteMany(where: WhereInput): Promise<{ count: number }> {
     return this.model.deleteMany({ where })
   }
 
   async restore(id: string): Promise<T> {
     return this.model.update({
       where: { id },
-      data: { deleted_at: null }
-    })
+      data: { deleted_at: null },
+    }) as Promise<T>
   }
 
-  async restoreMany(where: any): Promise<{ count: number }> {
+  async restoreMany(where: WhereInput): Promise<{ count: number }> {
     return this.model.updateMany({
       where,
-      data: { deletedAt: null }
+      data: { deleted_at: null },
     })
   }
 
-  async count(where?: any): Promise<number> {
+  async count(where?: WhereInput): Promise<number> {
     return this.model.count({
       where: {
         deleted_at: null,
-        ...where
-      }
+        ...where,
+      },
     })
   }
 
-  async exists(where: any): Promise<boolean> {
+  async exists(where: WhereInput): Promise<boolean> {
     const count = await this.model.count({
       where: {
         deleted_at: null,
-        ...where
-      }
+        ...where,
+      },
     })
     return count > 0
   }
@@ -159,21 +178,16 @@ export class BaseRepository<T extends BaseEntity> {
   async paginate(options: {
     page: number
     pageSize: number
-    where?: any
-    orderBy?: any
-    include?: any
+    where?: WhereInput
+    orderBy?: OrderByInput
+    include?: Record<string, unknown>
   }) {
     const { page, pageSize, where, orderBy, include } = options
     const skip = (page - 1) * pageSize
 
     const [data, total] = await Promise.all([
-      this.findMany(where || {}, {
-        orderBy,
-        include,
-        skip,
-        take: pageSize
-      }),
-      this.count(where)
+      this.findMany(where ?? {}, { orderBy, include, skip, take: pageSize }),
+      this.count(where),
     ])
 
     return {
@@ -184,22 +198,16 @@ export class BaseRepository<T extends BaseEntity> {
         total,
         totalPages: Math.ceil(total / pageSize),
         hasNext: page * pageSize < total,
-        hasPrev: page > 1
-      }
+        hasPrev: page > 1,
+      },
     }
   }
 
-  async upsert(where: any, create: any, update: any): Promise<T> {
-    return this.model.upsert({
-      where,
-      create,
-      update
-    })
+  async upsert(where: WhereInput, create: Partial<T>, update: Partial<T>): Promise<T> {
+    return this.model.upsert({ where, create, update }) as Promise<T>
   }
 
-  async transaction<R>(
-    fn: (tx: any) => Promise<R>
-  ): Promise<R> {
+  async transaction<R>(fn: (tx: PrismaTransactionClient) => Promise<R>): Promise<R> {
     return this.prisma.$transaction(fn)
   }
 }
