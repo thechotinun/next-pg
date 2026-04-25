@@ -99,7 +99,7 @@ export class ExampleService {
         return { success: false, error: 'Example not found' }
       }
 
-      const example = await exampleRepository.softDelete(id)
+      const example = await exampleRepository.softDelete(id, 'system_example_service')
       return { success: true, data: example }
     } catch (error) {
       console.error('Failed to delete example:', error)

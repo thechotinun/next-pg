@@ -23,6 +23,6 @@ model example {
   created_at DateTime @default(now())
   updated_by String?   @default("system") @db.VarChar(50)
   updated_at DateTime? @updatedAt
-  deleted_by String?   @default("system") @db.VarChar(50)
+  deleted_by String?   @db.VarChar(50)
   deleted_at DateTime?
 }

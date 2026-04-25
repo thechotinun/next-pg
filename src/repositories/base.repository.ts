@@ -115,14 +115,14 @@ export class BaseRepository<T extends BaseEntity> {
     })
   }
 
-  async softDelete(id: string): Promise<T> {
+  async softDelete(id: string, deletedBy?: string): Promise<T> {
     return this.model.update({
       where: { id },
-      data: { deleted_at: new Date() },
+      data: { deleted_by: deletedBy, deleted_at: new Date() },
     }) as Promise<T>
   }
 
-  async softDeleteMany(where: WhereInput): Promise<{ count: number }> {
+  async softDeleteMany(where: WhereInput, deletedBy?: string): Promise<{ count: number }> {
     return this.model.updateMany({
       where: {
         deleted_at: null,
