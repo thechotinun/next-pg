@@ -1,10 +1,18 @@
 import { exampleRepository } from '@/repositories/example'
+import type { exampleModel } from '@/generated/prisma/models/example'
+
+export type ExamplePublic = Omit<exampleModel, 'deleted_by' | 'deleted_at'>
+
+function toPublic(example: exampleModel): ExamplePublic {
+  const { deleted_by: _db, deleted_at: _da, ...rest } = example
+  return rest
+}
 
 export class ExampleService {
   async getAllExamples() {
     try {
       const examples = await exampleRepository.findAll()
-      return { success: true, data: examples }
+      return { success: true, data: examples.map(toPublic) }
     } catch (error) {
       console.error('Failed to fetch examples:', error)
       return { success: false, error: 'Failed to fetch examples' }
@@ -19,7 +27,7 @@ export class ExampleService {
         return { success: false, error: 'Example not found' }
       }
 
-      return { success: true, data: example }
+      return { success: true, data: toPublic(example) }
     } catch (error) {
       console.error('Failed to fetch example:', error)
       return { success: false, error: 'Failed to fetch example' }
@@ -50,7 +58,7 @@ export class ExampleService {
         status: data.status || true
       })
 
-      return { success: true, data: example }
+      return { success: true, data: toPublic(example) }
     } catch (error) {
       console.error('Failed to create example:', error)
       return { success: false, error: 'Failed to create example' }
@@ -85,7 +93,7 @@ export class ExampleService {
       }
 
       const example = await exampleRepository.update(id, data)
-      return { success: true, data: example }
+      return { success: true, data: toPublic(example) }
     } catch (error) {
       console.error('Failed to update example:', error)
       return { success: false, error: 'Failed to update example' }
@@ -100,7 +108,7 @@ export class ExampleService {
       }
 
       const example = await exampleRepository.softDelete(id, 'system_example_service')
-      return { success: true, data: example }
+      return { success: true, data: toPublic(example) }
     } catch (error) {
       console.error('Failed to delete example:', error)
       return { success: false, error: 'Failed to delete example' }
@@ -110,7 +118,7 @@ export class ExampleService {
   async restoreExample(id: string) {
     try {
       const example = await exampleRepository.restore(id)
-      return { success: true, data: example }
+      return { success: true, data: toPublic(example) }
     } catch (error) {
       console.error('Failed to restore example:', error)
       return { success: false, error: 'Failed to restore example' }
@@ -120,7 +128,7 @@ export class ExampleService {
   async searchExamples(searchTerm: string) {
     try {
       const examples = await exampleRepository.searchByName(searchTerm)
-      return { success: true, data: examples }
+      return { success: true, data: examples.map(toPublic) }
     } catch (error) {
       console.error('Failed to search examples:', error)
       return { success: false, error: 'Failed to search examples' }
@@ -130,7 +138,7 @@ export class ExampleService {
   async getExamplesByStatus(status: boolean) {
     try {
       const examples = await exampleRepository.findByStatus(status)
-      return { success: true, data: examples }
+      return { success: true, data: examples.map(toPublic) }
     } catch (error) {
       console.error('Failed to fetch examples by status:', error)
       return { success: false, error: 'Failed to fetch examples by status' }
@@ -162,7 +170,7 @@ export class ExampleService {
         pageSize,
         orderBy: { createdAt: 'desc' }
       })
-      return { success: true, data: result }
+      return { success: true, data: { ...result, data: result.data.map(toPublic) } }
     } catch (error) {
       console.error('Failed to paginate examples:', error)
       return { success: false, error: 'Failed to paginate examples' }

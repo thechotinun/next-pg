@@ -4,7 +4,7 @@ import { revalidatePath } from 'next/cache';
 import { exampleService } from '@/services/example';
 import { createLogger, withCorrelationAction } from '@/lib/logger';
 
-export type { exampleModel as Example } from '@/generated/prisma/models/example';
+export type { ExamplePublic as Example } from '@/services/example';
 
 const log = createLogger('action:example');
 
