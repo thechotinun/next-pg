@@ -128,7 +128,7 @@ export class BaseRepository<T extends BaseEntity> {
         deleted_at: null,
         ...where,
       },
-      data: { deleted_at: new Date() },
+      data: { deleted_by: deletedBy, deleted_at: new Date() },
     })
   }
 
