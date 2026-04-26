@@ -1,20 +1,26 @@
-import pino from "pino";
-import pretty from "pino-pretty";
-import { correlationStore } from "./correlation";
-import createConfig from "@/config/configuration";
+import pino from 'pino';
+import pretty from 'pino-pretty';
+import { correlationStore } from './correlation';
+import createConfig from '@/config/configuration';
 
 const config = createConfig();
 
-const isDev = config.MODE !== "production";
+const isDev = config.MODE !== 'production';
+
+type LogKind = "http" | "action" | "db" | "external";
 
 // Use pino-pretty as a synchronous stream in dev to avoid worker-thread issues in Next.js
 const stream = isDev
-  ? pretty({ colorize: true, translateTime: "SYS:standard", ignore: "pid,hostname" })
+  ? pretty({
+      colorize: true,
+      translateTime: 'SYS:standard',
+      ignore: 'pid,hostname',
+    })
   : undefined;
 
 const logger = pino(
   {
-    level: config.LOG_LEVEL ?? "info",
+    level: config.LOG_LEVEL ?? 'info',
     timestamp: pino.stdTimeFunctions.isoTime,
     base: {
       app: config.NAME,
@@ -22,7 +28,7 @@ const logger = pino(
       env: config.MODE,
     },
   },
-  stream
+  stream,
 );
 
 // Wrapper is inject correlationId automatically to every log
@@ -53,9 +59,8 @@ function createLogger(module: string) {
       withContext({ err, ...extra }).error(msg);
     },
 
-    // for HTTP request log
-    http: (msg: string, extra?: Record<string, unknown>) =>
-      withContext(extra).info({ kind: "http", ...extra }, msg),
+    event: (msg: string, kind: LogKind, extra?: Record<string, unknown>) =>
+      withContext(extra).info({ kind, ...extra }, msg),
   };
 }
 

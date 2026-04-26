@@ -1,62 +1,112 @@
-'use server'
+'use server';
 
-import { exampleService } from '@/services/example'
-import { revalidatePath } from 'next/cache'
+import { revalidatePath } from 'next/cache';
+import { exampleService } from '@/services/example';
+import { createLogger, withCorrelationAction } from '@/lib/logger';
 
-export type { exampleModel as Example } from '@/generated/prisma/models/example'
+export type { exampleModel as Example } from '@/generated/prisma/models/example';
+
+const log = createLogger('action:example');
 
 export async function getAllExamplesAction() {
-  return await exampleService.getAllExamples()
+  return withCorrelationAction(async () => {
+    log.event('getAllExamplesAction called', 'action');
+    const result = await exampleService.getAllExamples();
+    log.info('getAllExamplesAction called', { count: result.data?.length });
+    return result;
+  });
 }
 
 export async function getExampleByIdAction(id: string) {
-  return await exampleService.getExampleById(id)
+  return withCorrelationAction(async () => {
+    log.debug('getExampleByIdAction called', { id });
+    return exampleService.getExampleById(id);
+  });
 }
 
 export async function createExampleAction(data: {
-  name: string
-  status?: boolean
+  name: string;
+  status?: boolean;
 }) {
-  const result = await exampleService.createExample(data)
+  return withCorrelationAction(async () => {
+    log.info('createExampleAction called', { name: data.name });
 
-  if (result.success) {
-    revalidatePath('/example')
-  }
+    const result = await exampleService.createExample(data);
 
-  return result
+    if (!result.success) {
+      log.warn('createExample failed', { error: result.error });
+    } else {
+      log.info('createExample success', {
+        id: (result.data as { id?: string })?.id,
+      });
+      revalidatePath('/example');
+    }
+
+    return result;
+  });
 }
 
 export async function updateExampleAction(
   id: string,
-  data: { name?: string; status?: boolean }
+  data: { name?: string; status?: boolean },
 ) {
-  const result = await exampleService.updateExample(id, data)
+  return withCorrelationAction(async () => {
+    log.info('updateExampleAction called', { id });
 
-  if (result.success) {
-    revalidatePath('/example')
-  }
+    const result = await exampleService.updateExample(id, data);
 
-  return result
+    if (!result.success) {
+      log.warn('updateExample failed', { id, error: result.error });
+    } else {
+      log.info('updateExample success', { id });
+      revalidatePath('/example');
+    }
+
+    return result;
+  });
 }
 
 export async function deleteExampleAction(id: string) {
-  const result = await exampleService.deleteExample(id)
+  return withCorrelationAction(async () => {
+    try {
+      log.event('deleteExampleAction called', 'action', { id });
 
-  if (result.success) {
-    revalidatePath('/example')
-  }
+      const result = await exampleService.deleteExample(id);
 
-  return result
+      if (!result.success) {
+        log.warn('Failed to delete example', { id, reason: result.error });
+        return { success: false, error: result.error };
+      }
+
+      log.event('deleteExample success', 'action', { id });
+
+      revalidatePath('/example');
+
+      return { success: true };
+    } catch (error) {
+      log.error('Unexpected error in deleteExampleAction', error);
+      return { success: false, error: 'Internal server error' };
+    }
+  });
 }
 
 export async function searchExamplesAction(searchTerm: string) {
-  return await exampleService.searchExamples(searchTerm)
+  return withCorrelationAction(async () => {
+    log.debug('searchExamplesAction called', { searchTerm });
+    return exampleService.searchExamples(searchTerm);
+  });
 }
 
 export async function getExamplesByStatusAction(status: boolean) {
-  return await exampleService.getExamplesByStatus(status)
+  return withCorrelationAction(async () => {
+    log.debug('getExamplesByStatusAction called', { status });
+    return exampleService.getExamplesByStatus(status);
+  });
 }
 
 export async function paginateExamplesAction(page: number, pageSize: number) {
-  return await exampleService.paginateExamples(page, pageSize)
+  return withCorrelationAction(async () => {
+    log.debug('paginateExamplesAction called', { page, pageSize });
+    return exampleService.paginateExamples(page, pageSize);
+  });
 }
