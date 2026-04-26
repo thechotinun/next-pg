@@ -1,4 +1,5 @@
 import pino from "pino";
+import pretty from "pino-pretty";
 import { correlationStore } from "./correlation";
 import createConfig from "@/config/configuration";
 
@@ -6,31 +7,23 @@ const config = createConfig();
 
 const isDev = config.MODE !== "production";
 
-const logger = pino({
-  level: config.LOG_LEVEL ?? "info",
+// Use pino-pretty as a synchronous stream in dev to avoid worker-thread issues in Next.js
+const stream = isDev
+  ? pretty({ colorize: true, translateTime: "SYS:standard", ignore: "pid,hostname" })
+  : undefined;
 
-  // Format timestamp for Kibana
-  timestamp: pino.stdTimeFunctions.isoTime,
-
-  // Base fields for every log
-  base: {
-    app: config.NAME,
-    version: config.VERSION,
-    env: config.MODE,
-  },
-
-  // Dev: pretty print / Prod: JSON for Kibana
-  ...(isDev && {
-    transport: {
-      target: "pino-pretty",
-      options: {
-        colorize: true,
-        translateTime: "SYS:standard",
-        ignore: "pid,hostname",
-      },
+const logger = pino(
+  {
+    level: config.LOG_LEVEL ?? "info",
+    timestamp: pino.stdTimeFunctions.isoTime,
+    base: {
+      app: config.NAME,
+      version: config.VERSION,
+      env: config.MODE,
     },
-  }),
-});
+  },
+  stream
+);
 
 // Wrapper is inject correlationId automatically to every log
 function createLogger(module: string) {

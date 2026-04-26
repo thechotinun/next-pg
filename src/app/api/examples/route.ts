@@ -1,30 +1,33 @@
-import { NextResponse } from 'next/server';
-import { exampleService } from '@/services/example/index';
+import { NextResponse } from "next/server";
+import { exampleService } from "@/services/example/index";
+import { createLogger, withCorrelation } from "@/lib/logger";
 
-//GET
-export async function GET(req: Request) {
+const log = createLogger("api:examples");
+
+export const GET = withCorrelation(async () => {
+  log.http("GET /api/examples");
+
   try {
-    const { searchParams } = new URL(req.url);
-
     const result = await exampleService.getAllExamples();
 
     if (!result.success) {
+      log.warn("getAllExamples failed", { error: result.error });
       return NextResponse.json({ message: result.error }, { status: 400 });
     }
 
+    log.info("getAllExamples success", { count: result.data?.length });
     return NextResponse.json(
-      { message: 'Success', data: result.data },
-      { status: 200 },
+      { message: "Success", data: result.data },
+      { status: 200 }
     );
   } catch (error: unknown) {
-    console.error('Error get data:', error);
-
+    log.error("Unhandled error in GET /api/examples", error);
     return NextResponse.json(
       {
-        message: 'Error get data',
+        message: "Error get data",
         error: error instanceof Error ? error.message : String(error),
       },
-      { status: 500 },
+      { status: 500 }
     );
   }
-}
+});
